@@ -1,11 +1,6 @@
-import { defineStore } from "pinia";
+import { defineStore } from "../pinia";
 import { ref, computed } from "vue";
 
-/**
- * defineStore参数二的setup函数写法:
- *
- *
- */
 const store = defineStore("todolist2", () => {
   // 定义state
   const todoList2 = ref([]);
