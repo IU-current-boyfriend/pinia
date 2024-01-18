@@ -49,6 +49,73 @@ const addTodo = () => {
 };
 
 /**
+ * onActions api的使用方式：
+ *
+ *
+ */
+store.$onAction(({ after, onError }) => {
+  // 获取$onAction被调用之前的store中的todolist1状态
+  console.log("before onAction one: =>", store.todolist1);
+
+  // 第一个after钩子函数
+  after((resolvedValue) => {
+    // 获取$onAction被调用之后的store中的todolist1状态
+    console.log("after1: =>", store.todolist1);
+
+    // resolvedValue: => 表示的是action方法的返回值
+    console.log("resolvedValue1: =>", resolvedValue);
+  });
+
+  // 第二个after钩子函数
+  after((resolvedValue) => {
+    console.log("after2: =>", store.todolist1);
+
+    console.log("resolvedValue2: =>", resolvedValue);
+  });
+
+  // 第一个onError函数
+  onError((err) => {
+    console.log("err1: =>", err);
+  });
+
+  // 第二个onError函数
+  onError((err) => {
+    console.log("err2: =>", err);
+  });
+});
+
+store.$onAction(({ after, onError }) => {
+  // 获取$onAction被调用之前的store中的todolist1状态
+  console.log("before onAction two: =>", store.todolist1);
+
+  // 第一个after钩子函数
+  after((resolvedValue) => {
+    // 获取$onAction被调用之后的store中的todolist1状态
+    console.log("after1: =>", store.todolist1);
+
+    // resolvedValue: => 表示的是action方法的返回值
+    console.log("resolvedValue1: =>", resolvedValue);
+  });
+
+  // 第二个after钩子函数
+  after((resolvedValue) => {
+    console.log("after2: =>", store.todolist1);
+
+    console.log("resolvedValue2: =>", resolvedValue);
+  });
+
+  // 第一个onError函数
+  onError((err) => {
+    console.log("err1: =>", err);
+  });
+
+  // 第二个onError函数
+  onError((err) => {
+    console.log("err2: =>", err);
+  });
+});
+
+/**
  * 使用patch api的功能：
  *    将一个state补丁应用于当前状态，允许嵌套值。
  *
@@ -56,14 +123,9 @@ const addTodo = () => {
 
 const handleClickPatch = () => {
   // 两种写法
-  // store.$patch({
-  //   count: 100,
-  // });
-
-  // store.$patch((state) => {
-  //   state.count = 100;
-  // });
-  store.count = 100;
+  store.$patch({
+    count: 100,
+  });
 };
 
 const handleClickReset = () => {
@@ -85,6 +147,16 @@ const removeTodo = (id) => {
 const handleClickChangeCount = () => {
   store.changeCount();
 };
+
+/**
+ * 使用$subscribe api:
+ *
+ *
+ */
+// store.$subscribe((info, state) => {
+//   // console.log("info: =>", info);
+//   // console.log("state: =>", state);
+// }, {});
 </script>
 
 <style scoped></style>

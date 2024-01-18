@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore } from "../pinia";
 import { ref, computed } from "vue";
 
 const store = defineStore("todolist2", () => {

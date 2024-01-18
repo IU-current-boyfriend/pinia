@@ -1,7 +1,7 @@
-import { createPinia } from "pinia";
+import { createPinia } from "../pinia";
 
 const pinia = createPinia();
 
-console.log("pinia: =>", pinia);
+// console.log("pinia: =>", pinia);
 
 export default pinia;

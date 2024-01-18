@@ -1,4 +1,5 @@
-import { isFunction, mergeObject } from "./utils";
+import { watch } from "vue";
+import { isFunction, mergeObject, subscription } from "./utils";
 
 export const createPatchApi = (pinia, id) => {
   return function $patch(stateOrFn) {
@@ -21,5 +22,28 @@ export const createResetApi = (store, state) => {
     store.$patch((state) => {
       Object.assign(state, initState);
     });
+  };
+};
+
+export const createSubscribeApi = (pinia, id, scope) => {
+  return function $createSubscribe(cb, options = {}) {
+    return scope.run(() =>
+      watch(
+        pinia.state.value[id],
+        (state) => {
+          cb({ storeId: id }, state);
+        },
+        options
+      )
+    );
+  };
+};
+
+export const onActionCallbackFnList = [];
+
+export const createOptionActionApi = () => {
+  return function $onAction(callbackFn) {
+    // 开启订阅
+    subscription.subscribe(onActionCallbackFnList, callbackFn);
   };
 };

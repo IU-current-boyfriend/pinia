@@ -27,9 +27,22 @@ import {
   reactive,
   toRefs,
 } from "vue";
-import { isComputed, isFunction, isObject, isString } from "./utils";
+import {
+  isComputed,
+  isFunction,
+  isObject,
+  isString,
+  subscription,
+} from "./utils";
 import { PINIA_NAME_SYMBOL } from "./config";
-import { createPatchApi, createResetApi } from "./apis";
+
+import {
+  createPatchApi,
+  createResetApi,
+  createSubscribeApi,
+  createOptionActionApi,
+  onActionCallbackFnList,
+} from "./apis";
 
 /**
  * 创建store需要的apis
@@ -43,6 +56,8 @@ const createApis = (pinia, id, scope) => {
     // 实际上是可以接收到的，但是野sir并没有这样去做。
     $patch: createPatchApi(pinia, id),
     // 不能直接在这个地方设置$reset，因为这样的话，所有的store都会挂载$reset函数
+    $subscribe: createSubscribeApi(pinia, id, scope),
+    $onAction: createOptionActionApi(),
   };
 };
 
@@ -218,7 +233,37 @@ const createOptionGetter = (store, id, getters) => {
 const createOptionAction = (store, id, actions) => {
   return Object.keys(actions).reduce((wrapper, actionName) => {
     store[actionName] = (...args) => {
-      actions[actionName].apply(store, args);
+      const afterFnList = [];
+      const onErrorFnList = [];
+      const after = (cb) => {
+        subscription.subscribe(afterFnList, cb);
+      };
+      const onError = (cb) => {
+        subscription.subscribe(onErrorFnList, cb);
+      };
+      let res;
+      try {
+        // action的cb在action被调用之前执行
+        subscription.release(onActionCallbackFnList, { after, onError });
+        // res的结果，要给after函数使用
+        res = actions[actionName].apply(store, args);
+        // 这里和原生的pinia中onAction api相同，异常之后就不会走after回调了，
+        // 如果想异常之后，依旧走after回调，就将该代码放到外面即可。
+        subscription.release(afterFnList, res);
+      } catch (err) {
+        subscription.release(onErrorFnList, err);
+      }
+      // 判断res的类型,如果是Promise的话，还需要特殊处理
+      if (res instanceof Promise) {
+        return res
+          .then((value) => {
+            return subscription.release(afterFnList, value);
+          })
+          .catch((err) => {
+            subscription.release(onErrorFnList, err);
+            return Promise.reject(err);
+          });
+      }
     };
     return wrapper;
   }, {});

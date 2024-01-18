@@ -39,3 +39,15 @@ export const mergeObject = (targetState, originState) => {
   }
   return targetState;
 };
+
+// 发布订阅功能
+export const subscription = {
+  // 订阅功能
+  subscribe(list, cb) {
+    list.push(cb);
+  },
+  // 发布功能
+  release(list, ...args) {
+    list.forEach((cb) => cb(...args));
+  },
+};

@@ -65,9 +65,9 @@ const handleClickPatch = () => {
   });
 };
 
-// const handleClickReset = () => {
-// store.$reset();
-// };
+const handleClickReset = () => {
+  store.$reset();
+};
 
 const resetInputText = () => {
   inputText.value = "";

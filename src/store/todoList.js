@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore } from "../pinia";
 
 const store = defineStore("todolist1", {
   state: () => ({
