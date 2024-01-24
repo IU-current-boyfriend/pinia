@@ -34,16 +34,17 @@ import {
   isString,
   subscription,
 } from "./utils";
-import { PINIA_NAME_SYMBOL } from "./config";
+import { PINIA_NAME_SYMBOL, VUE_NAME_APPLICATION } from "./config";
 
 import {
   createPatchApi,
   createResetApi,
   createSubscribeApi,
   createOptionActionApi,
+  createDisposeApi,
+  setStoreStateHijacking,
   onActionCallbackFnList,
 } from "./apis";
-
 /**
  * 创建store需要的apis
  *  scope的目的在于之后的dispose方法
@@ -58,6 +59,9 @@ const createApis = (pinia, id, scope) => {
     // 不能直接在这个地方设置$reset，因为这样的话，所有的store都会挂载$reset函数
     $subscribe: createSubscribeApi(pinia, id, scope),
     $onAction: createOptionActionApi(),
+    $dispose: createDisposeApi(pinia, id, scope),
+    // 还是不能在这个位置，pinia里面可能不存在state对象
+    // $state: createStateApi(pinia, id),
   };
 };
 
@@ -71,12 +75,13 @@ const defineStore = (...args) => {
   const useStore = () => {
     // 从组件中获取的pinia实例对象，inject api
     const pinia = inject(PINIA_NAME_SYMBOL);
+    const application = inject(VUE_NAME_APPLICATION);
     // 判断pinia里面是否存在store实例对象
     if (!pinia.store.has(id)) {
       if (isSetUp) {
-        createSetUpStore(pinia, id, setup);
+        createSetUpStore(pinia, id, setup, application);
       } else {
-        createOptionStore(pinia, id, options);
+        createOptionStore(pinia, id, options, application);
       }
     }
     // 返回值，注意store是map形式
@@ -133,7 +138,7 @@ const formatDefineStoreArgs = (args) => {
  * @param {*} id
  * @param {*} setup
  */
-const createSetUpStore = (pinia, id, setup) => {
+const createSetUpStore = (pinia, id, setup, application) => {
   // setup函数执行后返回的对象setupStore
   const setupStore = setup();
 
@@ -151,7 +156,7 @@ const createSetUpStore = (pinia, id, setup) => {
   });
 
   // 设置store
-  setStore(pinia, id, store, result, setStore.state);
+  setStore(pinia, id, store, result, setStore.state, application);
 };
 
 const compilerSetup = (pinia, id, setupStore) => {
@@ -172,7 +177,7 @@ const compilerSetup = (pinia, id, setupStore) => {
   };
 };
 
-const createOptionStore = (pinia, id, options) => {
+const createOptionStore = (pinia, id, options, application) => {
   const { state, getters, actions } = options;
 
   let store;
@@ -191,7 +196,7 @@ const createOptionStore = (pinia, id, options) => {
     );
   });
   // 设置store
-  setStore(pinia, id, store, result, state);
+  setStore(pinia, id, store, result, state, application);
 };
 
 // 其实就是把options里面的state放入到pinia里面
@@ -269,12 +274,37 @@ const createOptionAction = (store, id, actions) => {
   }, {});
 };
 
+
+const runPlugins = (pinia, store, application) => {
+  pinia.plugins.forEach(cb => {
+    const res = cb({
+      store,
+      application,
+      pinia,
+    });
+    // 如果存在返回值的话
+    if (res) Object.assign(store, res);
+  })
+};
+
+const setStoreId = (store, id) => {
+  store.$id = id;
+}
+
+
 // 设置store方法
-const setStore = (pinia, id, store, result, state) => {
+const setStore = (pinia, id, store, result, state, application) => {
+  setStoreId(store, id);
   pinia.store.set(id, store);
   // 如果state存在的话，就是options形式
   state && (store.$reset = createResetApi(store, state));
+  // 还是需要在合并store对象的时候去处理$state劫持问题
+  setStoreStateHijacking(store, state);
+  // 执行plugins收集的回调函数依赖
+  runPlugins(pinia, store, application);
   Object.assign(store, result);
 };
+
+
 
 export default defineStore;

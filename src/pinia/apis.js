@@ -39,7 +39,7 @@ export const createSubscribeApi = (pinia, id, scope) => {
   };
 };
 
-export const onActionCallbackFnList = [];
+export let onActionCallbackFnList = [];
 
 export const createOptionActionApi = () => {
   return function $onAction(callbackFn) {
@@ -47,3 +47,32 @@ export const createOptionActionApi = () => {
     subscription.subscribe(onActionCallbackFnList, callbackFn);
   };
 };
+
+
+export const createDisposeApi = (pinia, id, scope) => {
+  return function $dispose() {
+    // 首先把action里面的回调函数清空
+    onActionCallbackFnList = [];
+    // 清空pinia里面保存的store对象，注意pinia.store数据格式是map
+    pinia.store.delete(id);
+    // 利用scope.stop清空作用域内部的副作用
+    scope.stop();
+  }
+}
+
+
+export const setStoreStateHijacking = (store, state) => {
+  Object.defineProperty(store, '$state', {
+    get() {
+      return state;
+    },
+    set(newValue) {
+      store.$patch(s => {
+        Object.assign(s, newValue);
+      })
+    }
+  });
+}
+
+
+

@@ -33,7 +33,8 @@
  *
  */
 import { effectScope, ref, provide } from "vue";
-import { PINIA_NAME_SYMBOL } from "./config";
+import { PINIA_NAME_SYMBOL, VUE_NAME_APPLICATION } from "./config";
+import { subscription } from "./utils";
 
 const createPinia = () => {
   // 创建state响应式数据对象
@@ -47,13 +48,27 @@ const createPinia = () => {
     install,
     state,
     scope,
+    use,
     store,
+    // 问题一：store里面要拿pluginsList，挂载到pinia实例对象上即可解决
+    plugins: pluginsList
+    // 问题二：如何让plugins里面拿到app应用实例呢？
   };
 };
+
+
+// 插件回调函数容器
+const pluginsList = [];
+
+function use(cb) {
+  subscription.subscribe(pluginsList, cb);
+}
+
 
 // 创建pinia对象内部的install方法
 function install(app) {
   app.provide(PINIA_NAME_SYMBOL, this);
+  app.provide(VUE_NAME_APPLICATION, app);
 }
 
 export default createPinia;
